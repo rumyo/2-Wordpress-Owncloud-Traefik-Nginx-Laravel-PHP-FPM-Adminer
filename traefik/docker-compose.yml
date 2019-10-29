@@ -1,0 +1,103 @@
+
+version: "3"
+
+
+networks:
+  web:
+    external: true
+  internal:
+    external: false
+  own:
+    external: false
+
+
+services:
+  blog:
+    image: wordpress:4.9.8-apache
+    environment:
+      - WORDPRESS_DB_NAME=wpdb
+      - WORDPRESS_TABLE_PREFIX=wp_
+      - WORDPRESS_DB_HOST=mysql
+      - WORDPRESS_DB_PASSWORD=seguridad25
+    labels:
+      - traefik.backend=blog1
+      - traefik.frontend.rule=Host:blog.yeet.com
+      - traefik.docker.network=web
+      - traefik.port=80
+    networks:
+      - internal
+      - web
+    depends_on:
+      - mysql
+  blog2:
+    image: wordpress:4.9.8-apache
+    environment:
+      - WORDPRESS_DB_NAME=wpdb
+      - WORDPRESS_TABLE_PREFIX=wp_
+      - WORDPRESS_DB_HOST=mysql
+      - WORDPRESS_DB_PASSWORD=seguridad25
+    labels:
+      - traefik.backend=blog2
+      - traefik.frontend.rule=Host:blog2.yeet.com
+      - traefik.docker.network=web
+      - traefik.port=80
+    networks:
+      - internal
+      - web
+    depends_on:
+      - mysql
+  mysql:
+    image: mysql:5.7
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=seguridad25
+    networks:
+      - internal
+    labels:
+      - traefik.enable=false
+  adminer:
+    image: adminer:4.6.3-standalone
+    labels:
+      - traefik.backend=adminer
+      - traefik.frontend.rule=Host:adminer.yeet.com
+      - traefik.docker.network=web
+      - traefik.port=8080
+    networks:
+      - internal
+      - web
+    depends_on:
+      - mysql
+
+  owncloud:
+    image: owncloud
+    networks:
+      - web
+      - own
+    volumes:
+      - ./data/apps/:/var/www/html/apps
+      - ./data/config/:/var/www/html/config
+      - ./data/data/:/var/www/html/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.backend=owncloud"
+      - "traefik.frontend.rule=Host:owncloud.yeet.com"
+      - "traefik.port=80"
+      - "traefik.docker.network=web"
+    depends_on:
+      - postgres
+  postgres:
+    image: postgres:alpine
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=seguridad25
+      - POSTGRES_USER=ubuntu
+      - POSTGRES_DB=ownclouddb
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - own
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./data/postgres:/var/lib/postgresql
+
+
